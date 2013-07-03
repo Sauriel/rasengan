@@ -26,8 +26,13 @@ public class DownloadActionListener implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		DownloadDialog downloadDialog = new DownloadDialog();
+		
+		RasenganMainFrame.comicService.addObserver(downloadDialog);
+		
 		downloadDialog.setLocationRelativeTo(null);
 		downloadDialog.setVisible(true);
+		
+		RasenganMainFrame.comicService.downloadComic(RasenganMainFrame.comic);
 	}
 
 }

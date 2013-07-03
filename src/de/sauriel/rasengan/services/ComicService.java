@@ -19,11 +19,10 @@
 package de.sauriel.rasengan.services;
 
 import java.net.URL;
+import java.util.Observer;
 import java.util.TreeMap;
 
 public interface ComicService {
-	
-	// All Comic Services have to extend java.util.Observable;
 	
 	// Get a String of the first character (or first few characters) 
 	// and return a TreeMap with the Comic Name as a Key and a URL as the Value
@@ -38,4 +37,7 @@ public interface ComicService {
 	
 	// Get a Comic Object and start downloading it
 	public void downloadComic(Comic comic);
+	
+	// All Comic Services have to extend java.util.Observable;
+	public void addObserver(Observer o);
 }

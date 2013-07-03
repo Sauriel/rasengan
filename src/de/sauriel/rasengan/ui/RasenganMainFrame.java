@@ -20,10 +20,19 @@ package de.sauriel.rasengan.ui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -44,6 +53,8 @@ import javax.swing.JScrollPane;
 import javax.swing.JList;
 import javax.swing.JButton;
 
+import org.imgscalr.Scalr;
+
 import de.sauriel.rasengan.services.Comic;
 import de.sauriel.rasengan.services.ComicService;
 import de.sauriel.rasengan.services.MangaReaderNetService;
@@ -58,8 +69,10 @@ public class RasenganMainFrame extends JFrame {
 	public static ComicService comicService = new MangaReaderNetService();
 	
 	private final String[] LETTERS = {"#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
-	String selectedInitial = "#";
+	private String selectedInitial = "#";
 	private DefaultListModel<String> listModel = new DefaultListModel<String>();
+	
+	public static Comic comic = null;
 	
 	// Prevents double selection in the Comic List
 	private int counter = 0;
@@ -130,7 +143,49 @@ public class RasenganMainFrame extends JFrame {
 		JList<String> comicList = new JList<>(listModel);
 		scrollPane.setViewportView(comicList);
 		
-		JPanel rightPanel = new JPanel();
+		JPanel rightPanel = new JPanel() {
+			
+			private static final long serialVersionUID = 7728104632421101358L;
+			
+			// Paint Components
+		
+			@Override
+			public void paintComponent(Graphics g){
+				super.paintComponent(g);
+				Graphics2D g2d = (Graphics2D) g;
+				
+				File fontFile = new File("resources/fonts/gm italic.ttf");
+		        Font font = new Font("Comic Sans MS", 1, 1);
+				try {
+					font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+				} catch (FontFormatException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		        GraphicsEnvironment ge = GraphicsEnvironment .getLocalGraphicsEnvironment();
+
+		        ge.registerFont(font);
+
+				g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				g2d.setFont(new Font("Gorilla Milkshake Italic", Font.ITALIC, 36));
+				if (comic != null) {
+					int stringLength = (int) (g2d.getFontMetrics()
+							.getStringBounds(comic.getName(), g2d).getWidth()) / 2;
+					g2d.drawString(comic.getName(), (this.getWidth() / 2)
+							- stringLength, 50);
+					BufferedImage resizedCover = Scalr.resize(comic.getCover(),
+							Scalr.Method.QUALITY, Scalr.Mode.FIT_TO_HEIGHT,
+							225, 300, Scalr.OP_ANTIALIAS);
+					g2d.drawImage(resizedCover, (this.getWidth() / 2)
+							- (resizedCover.getWidth() / 2), 50, null);
+				}
+				
+			}
+			
+		};
 		splitPane.setRightComponent(rightPanel);
 		rightPanel.setLayout(new BorderLayout(0, 0));
 		rightPanel.setMinimumSize(new Dimension(550, 600));
@@ -164,6 +219,8 @@ public class RasenganMainFrame extends JFrame {
 			
 		});
 		
+		
+		
 		menuStartDownload.addActionListener(new DownloadActionListener());
 		
 		downloadButton.addActionListener(new DownloadActionListener());
@@ -196,10 +253,9 @@ public class RasenganMainFrame extends JFrame {
 				if (counter == 1) {
 					JList<String> newComicList = (JList<String>) listEvent.getSource();
 					String comicName = newComicList.getSelectedValue();
-					Comic comic = comicService.getComic(comicName);
-
-					// TODO Show the Cover, let me download it
-					System.out.println(comic.getName());
+					comic = comicService.getComic(comicName);
+					
+					repaint();
 					
 					counter = 0;
 				} else {
@@ -256,6 +312,7 @@ public class RasenganMainFrame extends JFrame {
 			}
 			
 		});
+		
 	}
 
 }

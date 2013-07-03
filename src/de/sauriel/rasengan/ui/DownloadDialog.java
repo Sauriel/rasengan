@@ -22,16 +22,19 @@ import java.awt.BorderLayout;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
-
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Observable;
+import java.util.Observer;
 
-public class DownloadDialog extends JDialog {
+public class DownloadDialog extends JDialog implements Observer {
 
 	private static final long serialVersionUID = 4251447351437107605L;
+	
+	JProgressBar progressBar;
 
 	public DownloadDialog() {
 		
@@ -40,22 +43,21 @@ public class DownloadDialog extends JDialog {
 		setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
 		setAlwaysOnTop(true);
 		setModal(true);
-		setModalityType(ModalityType.APPLICATION_MODAL);
+		setModalityType(ModalityType.MODELESS);
 		setResizable(false);
-		setTitle("Downloading ...");
-		setType(Type.UTILITY);
+		setTitle("Downloading: " + RasenganMainFrame.comic.getName());
 		setBounds(100, 100, 300, 100);
 		setLayout(new BorderLayout(0, 0));
 		
 		// Set Content
 		
-		JLabel labelDownload = new JLabel("Downloading");
+		JLabel labelDownload = new JLabel("Downloading: " + RasenganMainFrame.comic.getName());
 		add(labelDownload, BorderLayout.NORTH);
 		
-		JProgressBar progressBar = new JProgressBar();
+		progressBar = new JProgressBar();
 		add(progressBar, BorderLayout.CENTER);
 		
-		JButton abortButton = new JButton("Abort");
+		JButton abortButton = new JButton("Close Window (Download will still going on)");
 		add(abortButton, BorderLayout.SOUTH);
 		
 		// Set Listener
@@ -68,6 +70,17 @@ public class DownloadDialog extends JDialog {
 			}
 			
 		});
+	}
+
+	@Override
+	public void update(Observable comicService, Object imagesCount) {
+		int[] newImagesCount= (int[]) imagesCount;
+		progressBar.setMaximum(newImagesCount[1]);
+		progressBar.setValue(newImagesCount[0]);
+		
+		if (newImagesCount[0] == newImagesCount[1]) {
+			dispose();
+		}
 	}
 
 }

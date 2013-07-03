@@ -42,7 +42,7 @@ public class MangaReaderNetService extends Observable implements ComicService {
 	private String mangaName;
 	
 	// Info for the Observer (42/100 completed)
-	private int[] images = new int[2];
+	private int[] imagesCount = new int[2];
 	
 	public MangaReaderNetService() {
 		try {
@@ -139,22 +139,23 @@ public class MangaReaderNetService extends Observable implements ComicService {
 	public void downloadComic(Comic comic) {
 		ArrayList<URL> chapterList = getChapterList(comic);
 		
-		images[1] = 0;
+		imagesCount[1] = 0;
 		
 		for (URL chapter : chapterList) {
 			try {
 				Document doc = Jsoup.connect(chapter.toString()).timeout(30000).get();
 				int imageCount = doc.getElementById("pageMenu").getElementsByTag("option").size();
-				images[1] += imageCount;
+				imagesCount[1] += imageCount;
 			} catch (IOException e) {
 				//TODO Treat the Exception. Yeah I'm a bit lazy
 				e.printStackTrace();
 			}
 		}
 		
-		images[0] = 0;
-		mangaName = comic.getName();
+		imagesCount[0] = 0;
+		mangaName = comic.getName().replace('/', '-');
 		for (final URL chapter : chapterList) {
+			
 			Thread thread = new Thread() {
 				public void run() {
 					downloadChapter(chapter);
@@ -168,31 +169,67 @@ public class MangaReaderNetService extends Observable implements ComicService {
 		try {
 			Document doc = Jsoup.connect(chapter.toString()).timeout(TIMEOUT_WAIT).get();
 			int imageCount = doc.getElementById("pageMenu").getElementsByTag("option").size();
-			images[1] += imageCount;
-			
-			String chapterCount = chapter.toString().substring(chapter.toString().length()-1);
 			
 			for (int i = 1; i <= imageCount; i++) {
-				Document imageDoc = Jsoup.connect(chapter.toString() + "/" + i).timeout(30000).get();
-				Element imageElement = imageDoc.getElementById("imgholder").getElementsByTag("img").first();
-				URL imageLink = new URL(imageElement.absUrl("src"));
-				BufferedImage bi = ImageIO.read(imageLink);
-				File pfad = new File(mangaName + "/chapter_" + chapterCount);
-				pfad.mkdirs();
 				
-				ImageIO.write(bi, "jpg", new File(mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
+				String chapterCount = chapter.toString().split("/")[chapter.toString().split("/").length-1];
 				
-				images[0]++;
-				
-				setChanged();
-				notifyObservers(images);
-				clearChanged();
+				// Test if the Comics are stored in the old or in the new format
+				String comparsion1 = chapter.toString().substring(chapter.toString().length() - 4).toLowerCase();
+				String comparsion2 = "html";
+				if (comparsion1.equals(comparsion2)) {
+					chapterCount = chapterCount.substring(8, chapterCount.length()-5);
+					downloadChapterMethod1(chapter, chapterCount, i);
+				} else {
+					downloadChapterMethod2(chapter, chapterCount, i);
+				}
 			}
 			
 		} catch (IOException e) {
 			//TODO Treat the Exception. Yeah I'm a bit lazy
 			e.printStackTrace();
 		}
+	}
+	
+	private void downloadChapterMethod1(URL chapter, String chapterCount, int i) throws IOException {
+		
+		// Modify the URL
+		String newChapterURL = chapter.toString();
+		String[] n1 = newChapterURL.split("/");
+		newChapterURL = n1[0] + "//" + n1[2] + "/" + n1[3].substring(0, n1[3].length()-1) + i + "/" + n1[4] + "/" + n1[5];
+		chapter = new URL(newChapterURL);
+
+		Document imageDoc = Jsoup.connect(chapter.toString()).timeout(TIMEOUT_WAIT).get();
+		Element imageElement = imageDoc.getElementById("imgholder").getElementsByTag("img").first();
+		URL imageLink = new URL(imageElement.absUrl("src"));
+		BufferedImage bi = ImageIO.read(imageLink);
+		File pfad = new File(mangaName + "/chapter_" + chapterCount);
+		pfad.mkdirs();
+		
+		ImageIO.write(bi, "jpg", new File(mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
+		
+		imagesCount[0]++;
+		
+		setChanged();
+		notifyObservers(imagesCount);
+		clearChanged();
+	}
+	
+	private void downloadChapterMethod2(URL chapter, String chapterCount, int i) throws IOException {
+		Document imageDoc = Jsoup.connect(chapter.toString() + "/" + i).timeout(TIMEOUT_WAIT).get();
+		Element imageElement = imageDoc.getElementById("imgholder").getElementsByTag("img").first();
+		URL imageLink = new URL(imageElement.absUrl("src"));
+		BufferedImage bi = ImageIO.read(imageLink);
+		File pfad = new File(mangaName + "/chapter_" + chapterCount);
+		pfad.mkdirs();
+		
+		ImageIO.write(bi, "jpg", new File(mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
+		
+		imagesCount[0]++;
+		
+		setChanged();
+		notifyObservers(imagesCount);
+		clearChanged();
 	}
 
 	private ArrayList<URL> getChapterList(Comic manga) {
