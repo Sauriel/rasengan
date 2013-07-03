@@ -20,13 +20,9 @@ package de.sauriel.rasengan.ui;
 
 import java.awt.BorderLayout;
 
-import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -46,7 +42,7 @@ public class DownloadDialog extends JDialog implements Observer {
 		setModalityType(ModalityType.MODELESS);
 		setResizable(false);
 		setTitle("Downloading: " + RasenganMainFrame.comic.getName());
-		setBounds(100, 100, 300, 100);
+		setBounds(100, 100, 300, 60);
 		setLayout(new BorderLayout(0, 0));
 		
 		// Set Content
@@ -56,20 +52,6 @@ public class DownloadDialog extends JDialog implements Observer {
 		
 		progressBar = new JProgressBar();
 		add(progressBar, BorderLayout.CENTER);
-		
-		JButton abortButton = new JButton("Close Window (Download will still going on)");
-		add(abortButton, BorderLayout.SOUTH);
-		
-		// Set Listener
-		
-		abortButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				dispose();
-			}
-			
-		});
 	}
 
 	@Override

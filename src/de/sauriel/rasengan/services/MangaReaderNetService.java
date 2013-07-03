@@ -18,6 +18,10 @@
 
 package de.sauriel.rasengan.services;
 
+import java.awt.BorderLayout;
+import java.awt.Dialog.ModalityType;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -28,11 +32,17 @@ import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
 
+import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
+import de.sauriel.rasengan.utils.CBZUtils;
 
 public class MangaReaderNetService extends Observable implements ComicService {
 	
@@ -203,10 +213,10 @@ public class MangaReaderNetService extends Observable implements ComicService {
 		Element imageElement = imageDoc.getElementById("imgholder").getElementsByTag("img").first();
 		URL imageLink = new URL(imageElement.absUrl("src"));
 		BufferedImage bi = ImageIO.read(imageLink);
-		File pfad = new File(mangaName + "/chapter_" + chapterCount);
+		File pfad = new File("temp/" + mangaName + "/chapter_" + chapterCount);
 		pfad.mkdirs();
 		
-		ImageIO.write(bi, "jpg", new File(mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
+		ImageIO.write(bi, "jpg", new File("temp/" + mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
 		
 		imagesCount[0]++;
 		
@@ -220,10 +230,10 @@ public class MangaReaderNetService extends Observable implements ComicService {
 		Element imageElement = imageDoc.getElementById("imgholder").getElementsByTag("img").first();
 		URL imageLink = new URL(imageElement.absUrl("src"));
 		BufferedImage bi = ImageIO.read(imageLink);
-		File pfad = new File(mangaName + "/chapter_" + chapterCount);
+		File pfad = new File("temp/" + mangaName + "/chapter_" + chapterCount);
 		pfad.mkdirs();
 		
-		ImageIO.write(bi, "jpg", new File(mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
+		ImageIO.write(bi, "jpg", new File("temp/" + mangaName + "/chapter_" + chapterCount + "/page_" + i + ".jpg"));
 		
 		imagesCount[0]++;
 		
@@ -245,6 +255,52 @@ public class MangaReaderNetService extends Observable implements ComicService {
 			e.printStackTrace();
 		}
 		return chapterList;
+	}
+
+	@Override
+	public void notifyObservers(Object arg) {
+		super.notifyObservers(arg);
+
+		if (imagesCount[0] == imagesCount[1]) {
+			CBZUtils utils = new CBZUtils(mangaName);
+			boolean mangaCreated = utils.createCBZ();
+			if (mangaCreated) {
+				
+				// delete the temp folder
+				try {
+					FileUtils.deleteDirectory(new File("temp"));
+				} catch (IOException e) {
+					//TODO Treat the Exception. Yeah I'm a bit lazy
+					e.printStackTrace();
+				}
+				
+				final JDialog dialog = new JDialog();
+				dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+				dialog.setAlwaysOnTop(true);
+				dialog.setModal(true);
+				dialog.setModalityType(ModalityType.MODELESS);
+				dialog.setResizable(false);
+				dialog.setTitle("Download comleted");
+				dialog.setBounds(100, 100, 100, 80);
+				dialog.setLayout(new BorderLayout(0, 0));
+				dialog.setLocationRelativeTo(null);
+				dialog.setVisible(true);
+				
+				JLabel label = new JLabel("Download comleted");
+				dialog.add(label, BorderLayout.NORTH);
+				
+				JButton ok = new JButton("OK");
+				dialog.add(ok, BorderLayout.SOUTH);
+				ok.addActionListener(new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						dialog.dispose();
+					}
+					
+				});
+			}
+		}
 	}
 
 }
