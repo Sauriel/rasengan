@@ -22,6 +22,8 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -29,6 +31,8 @@ import java.util.TreeMap;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.DefaultListModel;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -40,6 +44,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JList;
 import javax.swing.JButton;
 
+import de.sauriel.rasengan.services.Comic;
+import de.sauriel.rasengan.services.ComicService;
+import de.sauriel.rasengan.services.MangaReaderNetService;
+
 public class RasenganMainFrame extends JFrame {
 
 	private static final long serialVersionUID = -7183468013385609542L;
@@ -47,8 +55,14 @@ public class RasenganMainFrame extends JFrame {
 	private JPanel contentPane;
 	private JTextField searchField;
 	
+	public static ComicService comicService = new MangaReaderNetService();
+	
 	private final String[] LETTERS = {"#", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"};
+	String selectedInitial = "#";
 	private DefaultListModel<String> listModel = new DefaultListModel<String>();
+	
+	// Prevents double selection in the Comic List
+	private int counter = 0;
 
 	public RasenganMainFrame() {
 		
@@ -99,18 +113,18 @@ public class RasenganMainFrame extends JFrame {
 		JComboBox<String> initialSelector = new JComboBox<String>(LETTERS);
 		leftPanel.add(initialSelector, BorderLayout.NORTH);
 		
-		searchField = new JTextField();
+		searchField = new JTextField("Enter search text and press enter");
 		leftPanel.add(searchField, BorderLayout.SOUTH);
 		searchField.setColumns(10);
 		
 		JScrollPane scrollPane = new JScrollPane();
 		leftPanel.add(scrollPane, BorderLayout.CENTER);
 		
-		TreeMap<String, URL> mangaMap = new TreeMap<>();;
+		TreeMap<String, URL> comicMap = comicService.getComicList(selectedInitial);
 		ArrayList<String> list = new ArrayList<>();
-		list.addAll(mangaMap.keySet());
-		for(String manga : list){
-		    listModel.addElement(manga);
+		list.addAll(comicMap.keySet());
+		for(String comic : list){
+		    listModel.addElement(comic);
 		}
 		
 		JList<String> comicList = new JList<>(listModel);
@@ -153,6 +167,95 @@ public class RasenganMainFrame extends JFrame {
 		menuStartDownload.addActionListener(new DownloadActionListener());
 		
 		downloadButton.addActionListener(new DownloadActionListener());
+		
+		initialSelector.addActionListener(new ActionListener() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void actionPerformed(ActionEvent actionEvent) {
+				JComboBox<String> selectedLetter = (JComboBox<String>) actionEvent.getSource();
+				String selection = LETTERS[selectedLetter.getSelectedIndex()];
+				selectedInitial = selection;
+
+				ArrayList<String> newList = new ArrayList<>();
+				newList.addAll(comicService.getComicList(selectedInitial).keySet());
+				
+				listModel.removeAllElements();
+				for(String manga : newList){
+				    listModel.addElement(manga);
+				}
+			}
+			
+		});
+		
+		comicList.addListSelectionListener(new ListSelectionListener() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public void valueChanged(ListSelectionEvent listEvent) {
+				if (counter == 1) {
+					JList<String> newComicList = (JList<String>) listEvent.getSource();
+					String comicName = newComicList.getSelectedValue();
+					Comic comic = comicService.getComic(comicName);
+
+					// TODO Show the Cover, let me download it
+					System.out.println(comic.getName());
+					
+					counter = 0;
+				} else {
+					counter++;
+				}
+			}
+			
+		});
+		
+		searchField.addMouseListener(new MouseListener() {
+
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				searchField.setText("");
+				
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent arg0) {
+				// nothing to do here
+			}
+
+			@Override
+			public void mouseExited(MouseEvent arg0) {
+				// nothing to do here
+			}
+
+			@Override
+			public void mousePressed(MouseEvent arg0) {
+				// nothing to do here
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent arg0) {
+				// nothing to do here
+			}
+			
+		});
+		searchField.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent actionEvent) {
+				JTextField newSearchBox = (JTextField) actionEvent.getSource();
+				String selection = newSearchBox.getText();
+				selectedInitial = selection;
+
+				ArrayList<String> newList = new ArrayList<>();
+				newList.addAll(comicService.searchComic(selectedInitial).keySet());
+				
+				listModel.removeAllElements();
+				for(String manga : newList){
+				    listModel.addElement(manga);
+				}
+			}
+			
+		});
 	}
 
 }
