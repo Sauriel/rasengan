@@ -31,8 +31,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -55,6 +55,7 @@ import javax.swing.JButton;
 
 import org.imgscalr.Scalr;
 
+import de.sauriel.rasengan.resources.fonts.Fonts;
 import de.sauriel.rasengan.services.Comic;
 import de.sauriel.rasengan.services.ComicService;
 import de.sauriel.rasengan.services.MangaReaderNetService;
@@ -73,6 +74,8 @@ public class RasenganMainFrame extends JFrame {
 	private DefaultListModel<String> listModel = new DefaultListModel<String>();
 	
 	public static Comic comic = null;
+	
+	Thread getCoverThread;
 	
 	// Prevents double selection in the Comic List
 	private int counter = 0;
@@ -154,7 +157,7 @@ public class RasenganMainFrame extends JFrame {
 				super.paintComponent(g);
 				Graphics2D g2d = (Graphics2D) g;
 				
-				File fontFile = new File("resources/fonts/gm italic.ttf");
+				InputStream fontFile = Fonts.class.getResourceAsStream("gm_italic.ttf");
 		        Font font = new Font("Comic Sans MS", 1, 1);
 				try {
 					font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
@@ -252,10 +255,15 @@ public class RasenganMainFrame extends JFrame {
 			public void valueChanged(ListSelectionEvent listEvent) {
 				if (counter == 1) {
 					JList<String> newComicList = (JList<String>) listEvent.getSource();
-					String comicName = newComicList.getSelectedValue();
-					comic = comicService.getComic(comicName);
-					
-					repaint();
+					final String comicName = newComicList.getSelectedValue();
+
+					getCoverThread = new Thread() {
+						public void run() {
+							comic = comicService.getComic(comicName);
+							repaint();
+						}
+					};
+					getCoverThread.start();
 					
 					counter = 0;
 				} else {
